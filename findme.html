@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FindMe — Share Location</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --accent: #4ade80;
+    --accent2: #22d3ee;
+    --danger: #f87171;
+    --text: #f0f0f5;
+    --muted: #888899;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  }
+
+  .screen { display: none; flex-direction: column; flex: 1; padding: 28px 20px 24px; animation: fadeUp 0.35s ease; }
+  .screen.active { display: flex; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .logo-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .logo-text {
+    font-family: var(--mono);
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    color: var(--text);
+  }
+
+  .hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 300px;
+    margin-bottom: 8px;
+  }
+
+  .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+
+  .btn {
+    padding: 14px 20px;
+    border-radius: 10px;
+    border: none;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.12s, opacity 0.12s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn:active { transform: scale(0.97); opacity: 0.85; }
+
+  .btn-primary { background: var(--accent); color: #0a1a0a; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+  .btn-danger { background: var(--danger); color: #1a0a0a; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); font-size: 13px; padding: 10px 16px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .input-wrap { margin-bottom: 16px; }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 13px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 20px;
+    letter-spacing: 0.2em;
+    text-align: center;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  input[type="text"]:focus { border-color: var(--accent2); }
+  input[type="text"]::placeholder { color: var(--muted); letter-spacing: 0.1em; font-size: 14px; }
+
+  .code-display {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .code-value {
+    font-family: var(--mono);
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+  }
+
+  .code-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  .status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .status-row:last-child { margin-bottom: 0; }
+  .status-key { color: var(--muted); }
+  .status-val { font-family: var(--mono); font-size: 12px; color: var(--text); }
+  .status-val.ok { color: var(--accent); }
+  .status-val.pending { color: #fbbf24; }
+  .status-val.error { color: var(--danger); }
+
+  .map-container {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    height: 260px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  #map { width: 100%; height: 100%; }
+
+  .map-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px;
+    background: var(--surface2);
+    font-size: 13px; color: var(--muted);
+  }
+
+  .spinner {
+    width: 28px; height: 28px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent2);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .coords-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .coord-item { display: flex; flex-direction: column; gap: 2px; }
+  .coord-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .coord-val { font-family: var(--mono); font-size: 13px; color: var(--accent2); }
+
+  .toast {
+    position: fixed; bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text); font-size: 13px;
+    padding: 10px 20px; border-radius: 100px;
+    transition: transform 0.3s ease;
+    z-index: 999; white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  .back-btn {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--muted); font-size: 13px;
+    background: none; border: none; cursor: pointer;
+    font-family: var(--sans);
+    margin-bottom: 20px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .waiting-anim {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .dot-anim span {
+    display: inline-block;
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: dotBounce 1.2s infinite ease-in-out;
+  }
+
+  .dot-anim span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-anim span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dotBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  .open-maps-btn {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--accent2);
+    background: none; border: none; cursor: pointer;
+    font-family: var(--sans); text-decoration: underline;
+    -webkit-tap-highlight-color: transparent;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- SCREEN: Home -->
+<div class="screen active" id="screen-home">
+  <div class="header">
+    <div class="logo-dot"></div>
+    <span class="logo-text">FINDME</span>
+  </div>
+  <div class="hero">
+    <h1>Find your<br><span>friend.</span></h1>
+    <p class="subtitle">Share a 6-digit code. Friend approves. See them on the map. No account needed.</p>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="goRequest()">&#x2192; Request a location</button>
+      <button class="btn btn-secondary" onclick="goRespond()">&#x1F4CD; Share my location</button>
+    </div>
+  </div>
+  <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:16px;">Works in your phone browser &bull; No install needed</p>
+</div>
+
+<!-- SCREEN: Requester — generate code -->
+<div class="screen" id="screen-request">
+  <button class="back-btn" onclick="goHome()">&#x2190; Back</button>
+  <p class="section-label">Step 1 of 2 — Your code</p>
+  <h1 style="font-size:26px;margin-bottom:8px;">Share this code<br>with your <span style="color:var(--accent)">friend</span></h1>
+  <p class="subtitle">Ask them to open this app and enter the code below to share their location with you.</p>
+
+  <div class="code-display">
+    <div class="code-value" id="gen-code">------</div>
+    <div class="code-hint">Send this to your friend</div>
+  </div>
+
+  <button class="btn btn-ghost" onclick="copyCode()" style="margin-bottom:16px;">&#x2398; Copy code</button>
+
+  <div class="waiting-anim">
+    <div class="dot-anim"><span></span><span></span><span></span></div>
+    <span>Waiting for friend to respond…</span>
+  </div>
+
+  <div class="status-card">
+    <div class="status-row">
+      <span class="status-key">Session</span>
+      <span class="status-val ok" id="req-session-status">Active</span>
+    </div>
+    <div class="status-row">
+      <span class="status-key">Friend responded</span>
+      <span class="status-val pending" id="req-friend-status">Waiting…</span>
+    </div>
+  </div>
+
+  <button class="btn btn-ghost" onclick="cancelRequest()">Cancel session</button>
+</div>
+
+<!-- SCREEN: Requester — got location -->
+<div class="screen" id="screen-result">
+  <button class="back-btn" onclick="goHome()">&#x2190; Done</button>
+  <p class="section-label" style="color:var(--accent)">Location received</p>
+  <h1 style="font-size:24px;margin-bottom:12px;">Found your <span style="color:var(--accent)">friend</span></h1>
+
+  <div class="map-container">
+    <div class="map-overlay" id="map-overlay">
+      <div class="spinner"></div>
+      <span>Loading map…</span>
+    </div>
+    <iframe id="map" frameborder="0" style="display:none;border:0;" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </div>
+
+  <div class="coords-box">
+    <div class="coord-item">
+      <span class="coord-label">Latitude</span>
+      <span class="coord-val" id="res-lat">—</span>
+    </div>
+    <div class="coord-item">
+      <span class="coord-label">Longitude</span>
+      <span class="coord-val" id="res-lng">—</span>
+    </div>
+    <div class="coord-item">
+      <span class="coord-label">Accuracy</span>
+      <span class="coord-val" id="res-acc">—</span>
+    </div>
+    <div class="coord-item">
+      <span class="coord-label">Received</span>
+      <span class="coord-val" id="res-time">—</span>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="openMaps()">Open in Google Maps</button>
+  <button class="btn btn-ghost" style="margin-top:8px;" onclick="goHome()">New request</button>
+</div>
+
+<!-- SCREEN: Responder — enter code -->
+<div class="screen" id="screen-respond">
+  <button class="back-btn" onclick="goHome()">&#x2190; Back</button>
+  <p class="section-label">Sharing your location</p>
+  <h1 style="font-size:26px;margin-bottom:8px;">Enter the <span style="color:var(--accent2)">code</span></h1>
+  <p class="subtitle">Your friend gave you a 6-digit code. Enter it below to share your location.</p>
+
+  <div class="input-wrap" style="margin-top:16px;">
+    <input type="text" id="code-input" maxlength="6" placeholder="A1B2C3" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')" />
+  </div>
+
+  <button class="btn btn-secondary" id="share-btn" onclick="shareLocation()">Share my location</button>
+
+  <hr class="divider">
+
+  <div class="status-card" id="share-status-card" style="display:none;">
+    <div class="status-row">
+      <span class="status-key">GPS</span>
+      <span class="status-val" id="gps-status">Getting…</span>
+    </div>
+    <div class="status-row">
+      <span class="status-key">Sent to friend</span>
+      <span class="status-val" id="send-status">Pending</span>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: Responder — done -->
+<div class="screen" id="screen-shared">
+  <div class="header">
+    <div class="logo-dot" style="background:var(--accent2);box-shadow:0 0 12px var(--accent2);animation:none;"></div>
+    <span class="logo-text">SHARED</span>
+  </div>
+  <div class="hero">
+    <h1 style="font-size:30px;">Location<br><span style="color:var(--accent2)">sent!</span></h1>
+    <p class="subtitle">Your friend can now see your location. This was a one-time share — nothing is stored permanently.</p>
+    <div class="status-card">
+      <div class="status-row">
+        <span class="status-key">Shared at</span>
+        <span class="status-val ok" id="shared-time">—</span>
+      </div>
+      <div class="status-row">
+        <span class="status-key">Accuracy</span>
+        <span class="status-val" id="shared-acc">—</span>
+      </div>
+    </div>
+    <button class="btn btn-ghost" onclick="goHome()" style="margin-top:4px;">Back to home</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const DB_URL = 'https://findme-loc-default-rtdb.firebaseio.com';
+let currentCode = null;
+let pollInterval = null;
+let resultLat = null, resultLng = null;
+
+function randCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+  stopPolling();
+  currentCode = null;
+  showScreen('screen-home');
+}
+
+function goRequest() {
+  currentCode = randCode();
+  document.getElementById('gen-code').textContent = currentCode;
+  document.getElementById('req-friend-status').textContent = 'Waiting…';
+  document.getElementById('req-friend-status').className = 'status-val pending';
+  showScreen('screen-request');
+  startPolling();
+}
+
+function goRespond() {
+  document.getElementById('code-input').value = '';
+  document.getElementById('share-status-card').style.display = 'none';
+  document.getElementById('share-btn').disabled = false;
+  showScreen('screen-respond');
+}
+
+function copyCode() {
+  if (!currentCode) return;
+  navigator.clipboard?.writeText(currentCode).then(() => showToast('Code copied!')).catch(() => showToast(currentCode));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+async function dbSet(path, data) {
+  try {
+    const r = await fetch(`${DB_URL}/${path}.json`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    return r.ok;
+  } catch(e) { return false; }
+}
+
+async function dbGet(path) {
+  try {
+    const r = await fetch(`${DB_URL}/${path}.json`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+async function dbDelete(path) {
+  try {
+    await fetch(`${DB_URL}/${path}.json`, {method:'DELETE'});
+  } catch(e) {}
+}
+
+function startPolling() {
+  stopPolling();
+  pollInterval = setInterval(async () => {
+    if (!currentCode) return;
+    const data = await dbGet(`sessions/${currentCode}`);
+    if (data && data.lat && data.lng) {
+      stopPolling();
+      showResult(data);
+      dbDelete(`sessions/${currentCode}`);
+    }
+  }, 3000);
+}
+
+function stopPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+function cancelRequest() {
+  if (currentCode) dbDelete(`sessions/${currentCode}`);
+  goHome();
+}
+
+function showResult(data) {
+  resultLat = data.lat;
+  resultLng = data.lng;
+  document.getElementById('res-lat').textContent = data.lat.toFixed(5);
+  document.getElementById('res-lng').textContent = data.lng.toFixed(5);
+  document.getElementById('res-acc').textContent = data.acc ? Math.round(data.acc) + 'm' : '—';
+  document.getElementById('res-time').textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  document.getElementById('req-friend-status').textContent = 'Received!';
+  document.getElementById('req-friend-status').className = 'status-val ok';
+
+  const mapEl = document.getElementById('map');
+  const overlay = document.getElementById('map-overlay');
+  const src = `https://maps.google.com/maps?q=${data.lat},${data.lng}&z=16&output=embed`;
+  mapEl.src = src;
+  mapEl.style.display = 'block';
+  mapEl.onload = () => overlay.style.display = 'none';
+
+  showScreen('screen-result');
+}
+
+function openMaps() {
+  if (resultLat && resultLng) {
+    const url = `https://www.google.com/maps/search/?api=1&query=${resultLat},${resultLng}`;
+    window.open(url, '_blank');
+  }
+}
+
+async function shareLocation() {
+  const code = document.getElementById('code-input').value.trim().toUpperCase();
+  if (code.length !== 6) { showToast('Enter the full 6-digit code'); return; }
+
+  document.getElementById('share-btn').disabled = true;
+  document.getElementById('share-status-card').style.display = 'block';
+  document.getElementById('gps-status').textContent = 'Locating…';
+  document.getElementById('gps-status').className = 'status-val pending';
+  document.getElementById('send-status').textContent = 'Pending';
+  document.getElementById('send-status').className = 'status-val pending';
+
+  if (!navigator.geolocation) {
+    document.getElementById('gps-status').textContent = 'Not supported';
+    document.getElementById('gps-status').className = 'status-val error';
+    showToast('Geolocation not available on this device');
+    document.getElementById('share-btn').disabled = false;
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude: lat, longitude: lng, accuracy: acc } = pos.coords;
+      document.getElementById('gps-status').textContent = 'Got it (' + Math.round(acc) + 'm)';
+      document.getElementById('gps-status').className = 'status-val ok';
+
+      const ok = await dbSet(`sessions/${code}`, { lat, lng, acc, t: Date.now() });
+
+      if (ok) {
+        document.getElementById('send-status').textContent = 'Sent!';
+        document.getElementById('send-status').className = 'status-val ok';
+        document.getElementById('shared-time').textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        document.getElementById('shared-acc').textContent = Math.round(acc) + ' meters';
+        setTimeout(() => showScreen('screen-shared'), 800);
+      } else {
+        document.getElementById('send-status').textContent = 'Failed — check connection';
+        document.getElementById('send-status').className = 'status-val error';
+        showToast('Could not send. Check your internet.');
+        document.getElementById('share-btn').disabled = false;
+      }
+    },
+    (err) => {
+      const msgs = { 1:'Permission denied', 2:'Position unavailable', 3:'Timed out' };
+      document.getElementById('gps-status').textContent = msgs[err.code] || 'Error';
+      document.getElementById('gps-status').className = 'status-val error';
+      showToast('Could not get GPS: ' + (msgs[err.code] || err.message));
+      document.getElementById('share-btn').disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+</script>
+</body>
+</html>
